@@ -22,7 +22,7 @@ if (fs.existsSync('./session')) {
 
 router.get('/', async (req, res) => {
     async function EmpireQr() {
-        const { state, saveCreds } = await useMultiFileAuthState(`./auth_info_baileys`);
+        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
         try {
             let EmpireQrWeb = makeWASocket({
                 auth: {
