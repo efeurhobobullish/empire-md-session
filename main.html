@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire_Md Session</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            text-align: center;
+            width: 350px;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s ease-in-out;
+            background: cyan;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+        }
+
+        /* Floating Icons */
+        .floating-icon {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            animation: float 4s infinite ease-in-out;
+            z-index: 1;
+        }
+
+        .whatsapp {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .bot {
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 1s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Floating Icons -->
+    <div class="floating-icon whatsapp"></div>
+    <div class="floating-icon bot"></div>
+
+    <div class="container">
+        <h1>Link Your Device</h1>
+        <p>To connect your bot, choose an option below.</p>
+        <button class="btn" onclick="goTo('/qr-page')">Get QR Code</button>
+        <button class="btn" onclick="goTo('/pair')">Pair Device</button>
+    </div>
+
+    <script>
+        function goTo(path) {
+            window.location.href = path;
+        }
+    </script>
+
+</body>
+</html>
