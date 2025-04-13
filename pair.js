@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
     let num = req.query.number;
 
     async function EmpirePair() {
-        const { state, saveCreds } = await useMultiFileAuthState(`./auth_info_baileys`);
+        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
         try {
             let EmpirePairWeb = makeWASocket({
                 auth: {
