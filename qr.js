@@ -3,6 +3,14 @@ const fs = require('fs-extra');
 const { exec } = require("child_process");
 const pino = require("pino");
 const { toBuffer } = require("qrcode");
+const {
+    default: makeWASocket,
+    useMultiFileAuthState,
+    delay,
+    makeCacheableSignalKeyStore,
+    Browsers,
+    jidNormalizedUser
+} = require("baileys");
 const { upload } = require('./mega');
 
 let router = express.Router();
@@ -12,85 +20,90 @@ if (fs.existsSync('./session')) {
 }
 
 router.get('/', async (req, res) => {
-
     async function EmpireQr() {
+        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+
         try {
-            // ✅ SAME FIX needed here
-            const baileys = await import('baileys');
-
-            const makeWASocket = baileys.default;
-            const {
-                useMultiFileAuthState,
-                delay,
-                makeCacheableSignalKeyStore,
-                Browsers,
-                jidNormalizedUser
-            } = baileys;
-
-            const { state, saveCreds } = await useMultiFileAuthState('./session');
-
-            let sock = makeWASocket({
+            let EmpireQrWeb = makeWASocket({
                 auth: {
                     creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(
-                        state.keys,
-                        pino({ level: "fatal" })
-                    ),
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
                 },
                 printQRInTerminal: false,
-                logger: pino({ level: "fatal" }),
-                browser: Browsers.macOS("Safari"),
+                logger: pino({ level: "fatal" }).child({ level: "fatal" }),
+                browser: ["Mac OS", "Safari", "14.0"],
             });
 
-            sock.ev.on('creds.update', saveCreds);
-
-            sock.ev.on("connection.update", async (s) => {
+            EmpireQrWeb.ev.on('creds.update', saveCreds);
+            EmpireQrWeb.ev.on("connection.update", async (s) => {
                 const { connection, lastDisconnect, qr } = s;
 
-                // ✅ QR OUTPUT
-                if (qr && !res.headersSent) {
-                    try {
-                        const buffer = await toBuffer(qr);
+                if (qr) {
+                    if (!res.headersSent) {
                         res.setHeader('Content-Type', 'image/png');
-                        res.end(buffer);
-                    } catch (e) {
-                        console.log("QR error:", e);
+                        try {
+                            const qrBuffer = await toBuffer(qr);
+                            res.end(qrBuffer);
+                            return;
+                        } catch {
+                            return;
+                        }
                     }
                 }
 
-                // ✅ CONNECTED
                 if (connection === "open") {
                     try {
                         await delay(10000);
 
-                        const user_jid = jidNormalizedUser(sock.user.id);
+                         const authPath = './session/';
+const user_jid = jidNormalizedUser(EmpireQrWeb.user.id);
 
-                        function randomMegaId(length = 6, numberLength = 4) {
-                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                            let result = '';
-                            for (let i = 0; i < length; i++) {
-                                result += chars[Math.floor(Math.random() * chars.length)];
-                            }
-                            const number = Math.floor(Math.random() * Math.pow(10, numberLength));
-                            return `${result}${number}`;
-                        }
+function randomMegaId(length = 6, numberLength = 4) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = 'EmpireMd~';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    const number = Math.floor(Math.random() * Math.pow(10, numberLength));
+    return `${result}${number}`;
+}
 
-                        const mega_url = await upload(
-                            fs.createReadStream('./session/creds.json'),
-                            `${randomMegaId()}.json`
-                        );
+const sessionFile = authPath + 'creds.json';
+const randomId = randomMegaId();
 
-                        const sid = mega_url.replace('https://mega.nz/file/', '');
+const mega_url = await upload(fs.createReadStream(sessionFile), `${randomId}.json`);
+const sid = mega_url.replace('https://mega.nz/file/', '');
 
-                        await sock.sendMessage(user_jid, { text: sid });
+await EmpireQrWeb.sendMessage(user_jid, { text: randomId });
+await delay(5000);
 
-                        await delay(5000);
+                        await EmpireQrWeb.sendMessage(user_jid, {
+                            text: `
+                            Qr Code Connected by Empire Tech
+Made With 🤍
 
-                        await sock.sendMessage(user_jid, {
-                            text: `> QR CONNECTED SUCCESSFULLY ✅\n\nSession ID:\n${sid}`
+---
+
+╔════◇
+║ 『 WELCOME TO EMPIRE_MD 』
+║ You have successfully completed the first step to deploy your WhatsApp bot.
+╚════════════════════════╝
+
+╔═════◇
+║ 『••• 𝗩𝗶𝘀𝗶𝘁 𝗙𝗼𝗥 𝗛𝗘𝗟𝗣 •••』
+║ ❒ YouTube: https://youtube.com/@only_one_empire
+║ ❒ Developer: https://wa.me/2348078582627
+║ ❒ GitHub Repo: https://github.com/efeurhobobullish/Empire_Md
+║ ❒ Telegram Updates: https://t.me/empire_tech_updatess
+║ ❒ WhatsApp Channel: https://whatsapp.com/channel/0029VbBpPLa4yltGWSKWlC1L
+╚════════════════════════╝
+
+---
+
+⭐ Don't forget to star the repository on GitHub`
                         });
 
-                    } catch (e) {
+                    } catch {
                         exec('pm2 restart empire-md-session');
                     }
 
@@ -99,29 +112,27 @@ router.get('/', async (req, res) => {
                     process.exit(0);
                 }
 
-                // 🔁 RECONNECT
-                else if (connection === "close" && lastDisconnect?.error?.output?.statusCode !== 401) {
+                if (connection === "close" && lastDisconnect?.error?.output?.statusCode !== 401) {
                     await delay(10000);
                     EmpireQr();
                 }
             });
 
-        } catch (err) {
-            console.log("ERROR:", err);
+        } catch {
             exec('pm2 restart empire-md-session');
             fs.emptyDirSync('./session');
+            if (!res.headersSent) res.status(503).send({ error: "Service Unavailable" });
 
-            if (!res.headersSent) {
-                res.status(503).send({ error: "Service Unavailable" });
-            }
+            setTimeout(() => {
+                EmpireQr();
+            }, 5000);
         }
     }
 
     EmpireQr();
 });
 
-process.on('uncaughtException', function (err) {
-    console.log('Caught exception:', err);
+process.on('uncaughtException', () => {
     exec('pm2 restart empire-md-session');
 });
 
