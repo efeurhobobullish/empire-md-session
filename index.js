@@ -1,41 +1,42 @@
 const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
+
 const app = express();
-const bodyParser = require("body-parser");
 const PORT = process.env.PORT || 8000;
 
-// Define the base directory
-__path = process.cwd();
+// Base directory
+const BASE_DIR = process.cwd();
 
-// Import required modules
-let server = require('./qr'); // Assumed to generate and return a QR image
-let code = require('./pair');
+// Import routes (make sure these export express.Router)
+const qrRoutes = require('./qr');
+const pairRoutes = require('./pair');
 
+// Fix max listeners warning
 require('events').EventEmitter.defaultMaxListeners = 1000;
 
-// Middleware for parsing requests
+// Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Serve static HTML pages
+app.get('/', (req, res) => {
+    res.sendFile(path.join(BASE_DIR, 'main.html'));
+});
+
 app.get('/qr-page', (req, res) => {
-    res.sendFile(__path + '/qr.html');
+    res.sendFile(path.join(BASE_DIR, 'qr.html'));
 });
 
 app.get('/pair', (req, res) => {
-    res.sendFile(__path + '/pair.html');
+    res.sendFile(path.join(BASE_DIR, 'pair.html'));
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(__path + '/main.html');
-});
+// API Routes (NO duplication now)
+app.use('/qr', qrRoutes);     // → /qr
+app.use('/code', pairRoutes); // → /code
 
-// Serve the QR image
-app.use('/qr', server);
-
-// Serve additional routes
-app.use('/code', code);
-
-// Start the server
+// Start server
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
