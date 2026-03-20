@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs-extra');
 const { exec } = require("child_process");
+let router = express.Router();
 const pino = require("pino");
 const { toBuffer } = require("qrcode");
 const {
@@ -13,7 +14,7 @@ const {
 } = require("baileys");
 const { upload } = require('./mega');
 
-let router = express.Router();
+
 
 if (fs.existsSync('./session')) {
     fs.emptyDirSync('./session');
