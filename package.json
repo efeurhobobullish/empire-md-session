@@ -1,7 +1,7 @@
 {
   "name": "empire-md-session",
   "version": "0.0.1",
-  "type": "module",
+  "type": "commonjs",
   "description": "A multi-functional WhatsApp bot Pair code and qr code.",
   "main": "index.js",
   "scripts": {
